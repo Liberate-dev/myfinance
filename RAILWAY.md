@@ -19,9 +19,8 @@
 
 3. **Configure Service**
    - Railway auto-detects Node.js
-   - Build Command: `npm run build:all`
-   - Start Command: `npm run server:prod`
-   - Use `--legacy-peer-deps` flag if build fails due to peer dependency conflicts
+   - Build Command: `npm install --legacy-peer-deps && npm run build`
+   - Start Command: `npx tsx server/index.ts`
 
 4. **Set Environment Variables** (in Railway dashboard)
    ```
@@ -58,4 +57,5 @@
 
 **Build fails?**
 - Check Railway logs for missing dependencies
-- Ensure `npm run build:all` succeeds locally first
+- Ensure `npm install --legacy-peer-deps` succeeds locally first
+- If peer deps conflict, use `--legacy-peer-deps` flag

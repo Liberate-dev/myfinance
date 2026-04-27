@@ -1,5 +1,5 @@
-# Server
-web: node dist/server/index.js
+# Start server directly with tsx
+web: npx tsx server/index.ts
 
-# Or for development
+# Development
 dev: tsx watch server/index.ts
