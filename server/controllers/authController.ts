@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { UserModel } from '../models/User.js';
 import { AuthRequest } from '../middleware/auth.js';
-import { getDb } from '../models/User.js';
+import { run } from '../models/db.js';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -132,14 +132,13 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
 
 export const clearUserData = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
-  const database = getDb();
 
   // Delete all user data from all tables
-  database.prepare('DELETE FROM incomes WHERE user_id = ?').run(userId);
-  database.prepare('DELETE FROM expenses WHERE user_id = ?').run(userId);
-  database.prepare('DELETE FROM categories WHERE user_id = ?').run(userId);
-  database.prepare('DELETE FROM funds WHERE user_id = ?').run(userId);
-  database.prepare('DELETE FROM budgets WHERE user_id = ?').run(userId);
+  run('DELETE FROM incomes WHERE user_id = ?', [userId]);
+  run('DELETE FROM expenses WHERE user_id = ?', [userId]);
+  run('DELETE FROM categories WHERE user_id = ?', [userId]);
+  run('DELETE FROM funds WHERE user_id = ?', [userId]);
+  run('DELETE FROM budgets WHERE user_id = ?', [userId]);
 
   res.json({ message: 'All user data cleared successfully' });
 });

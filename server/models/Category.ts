@@ -1,4 +1,4 @@
-import { exec } from './db.js';
+import { exec, queryAll, queryOne, run } from './db.js';
 
 export interface Category {
   id: number;
