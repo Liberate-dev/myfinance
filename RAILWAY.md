@@ -21,6 +21,7 @@
    - Railway auto-detects Node.js
    - Build Command: `npm run build:all`
    - Start Command: `npm run server:prod`
+   - Use `--legacy-peer-deps` flag if build fails due to peer dependency conflicts
 
 4. **Set Environment Variables** (in Railway dashboard)
    ```

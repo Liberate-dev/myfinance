@@ -1,4 +1,4 @@
-import { getDb } from './User.js';
+import { queryAll, queryOne } from './db.js';
 
 export interface MonthlyReport {
   user_id: number;
@@ -19,23 +19,17 @@ export interface YearlyReport {
   total_income: number;
   total_expense: number;
   balance: number;
-  monthly_summary: {
-    month: number;
-    income: number;
-    expense: number;
-    balance: number;
-  }[];
+  monthly_summary: { month: number; income: number; expense: number; balance: number }[];
   expense_by_category: { category: string; total: number }[];
 }
 
 export const ReportModel = {
   getMonthlyReport: (userId: number, year: number, month: number): MonthlyReport => {
-    const database = getDb();
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
     // Get totals
-    const totalsStmt = database.prepare(`
+    const totals = queryOne<{ total_income: number; total_expense: number }>(`
       SELECT
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
@@ -44,30 +38,18 @@ export const ReportModel = {
         UNION ALL
         SELECT amount, 'expense' as type FROM expenses WHERE user_id = ? AND date >= ? AND date <= ?
       )
-    `);
-    const totals = totalsStmt.get(userId, startDate, endDate, userId, startDate, endDate) as { total_income: number; total_expense: number };
+    `, [userId, startDate, endDate, userId, startDate, endDate]) || { total_income: 0, total_expense: 0 };
 
-    // Get income by category
-    const incomeCatStmt = database.prepare(`
-      SELECT category, COALESCE(SUM(amount), 0) as total
-      FROM incomes
-      WHERE user_id = ? AND date >= ? AND date <= ?
-      GROUP BY category
-      ORDER BY total DESC
-    `);
-    const incomeByCategory = incomeCatStmt.all(userId, startDate, endDate) as { category: string; total: number }[];
+    const incomeByCategory = queryAll<{ category: string; total: number }>(
+      `SELECT source as category, COALESCE(SUM(amount), 0) as total FROM incomes WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY category ORDER BY total DESC`,
+      [userId, startDate, endDate]
+    );
 
-    // Get expense by category
-    const expenseCatStmt = database.prepare(`
-      SELECT category, COALESCE(SUM(amount), 0) as total
-      FROM expenses
-      WHERE user_id = ? AND date >= ? AND date <= ?
-      GROUP BY category
-      ORDER BY total DESC
-    `);
-    const expenseByCategory = expenseCatStmt.all(userId, startDate, endDate) as { category: string; total: number }[];
+    const expenseByCategory = queryAll<{ category: string; total: number }>(
+      `SELECT category, COALESCE(SUM(amount), 0) as total FROM expenses WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY category ORDER BY total DESC`,
+      [userId, startDate, endDate]
+    );
 
-    // Get top expenses
     const topExpenses = expenseByCategory.slice(0, 5).map(item => ({
       category: item.category,
       total: item.total,
@@ -75,7 +57,7 @@ export const ReportModel = {
     }));
 
     // Get daily breakdown
-    const dailyStmt = database.prepare(`
+    const dailyRows = queryAll<{ date: string; type: string; total: number }>(`
       SELECT date, type, COALESCE(SUM(amount), 0) as total
       FROM (
         SELECT date, 'income' as type, amount FROM incomes WHERE user_id = ? AND date >= ? AND date <= ?
@@ -84,31 +66,19 @@ export const ReportModel = {
       )
       GROUP BY date, type
       ORDER BY date
-    `);
-    const dailyRows = dailyStmt.all(userId, startDate, endDate, userId, startDate, endDate) as { date: string; type: string; total: number }[];
+    `, [userId, startDate, endDate, userId, startDate, endDate]);
 
-    // Group by date
     const dailyMap = new Map<string, { income: number; expense: number }>();
     for (const row of dailyRows) {
-      if (!dailyMap.has(row.date)) {
-        dailyMap.set(row.date, { income: 0, expense: 0 });
-      }
+      if (!dailyMap.has(row.date)) dailyMap.set(row.date, { income: 0, expense: 0 });
       const current = dailyMap.get(row.date)!;
-      if (row.type === 'income') {
-        current.income += row.total;
-      } else {
-        current.expense += row.total;
-      }
+      if (row.type === 'income') current.income += row.total;
+      else current.expense += row.total;
     }
-    const dailyBreakdown = Array.from(dailyMap.entries()).map(([date, amounts]) => ({
-      date,
-      ...amounts
-    }));
+    const dailyBreakdown = Array.from(dailyMap.entries()).map(([date, amounts]) => ({ date, ...amounts }));
 
     return {
-      user_id: userId,
-      month,
-      year,
+      user_id: userId, month, year,
       total_income: totals.total_income,
       total_expense: totals.total_expense,
       balance: totals.total_income - totals.total_expense,
@@ -120,12 +90,10 @@ export const ReportModel = {
   },
 
   getYearlyReport: (userId: number, year: number): YearlyReport => {
-    const database = getDb();
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
-    // Get yearly totals
-    const totalsStmt = database.prepare(`
+    const totals = queryOne<{ total_income: number; total_expense: number }>(`
       SELECT
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
@@ -134,13 +102,10 @@ export const ReportModel = {
         UNION ALL
         SELECT amount, 'expense' as type FROM expenses WHERE user_id = ? AND date >= ? AND date <= ?
       )
-    `);
-    const totals = totalsStmt.get(userId, startDate, endDate, userId, startDate, endDate) as { total_income: number; total_expense: number };
+    `, [userId, startDate, endDate, userId, startDate, endDate]) || { total_income: 0, total_expense: 0 };
 
-    // Get monthly summary
-    const monthlyStmt = database.prepare(`
-      SELECT
-        strftime('%m', date) as month,
+    const monthlyRows = queryAll<{ month: string; income: number; expense: number }>(`
+      SELECT strftime('%m', date) as month,
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense
       FROM (
@@ -150,8 +115,7 @@ export const ReportModel = {
       )
       GROUP BY strftime('%m', date)
       ORDER BY month
-    `);
-    const monthlyRows = monthlyStmt.all(userId, startDate, endDate, userId, startDate, endDate) as { month: string; income: number; expense: number }[];
+    `, [userId, startDate, endDate, userId, startDate, endDate]);
 
     const monthlySummary = monthlyRows.map(row => ({
       month: parseInt(row.month),
@@ -160,19 +124,13 @@ export const ReportModel = {
       balance: row.income - row.expense
     }));
 
-    // Get expense by category for the year
-    const expenseCatStmt = database.prepare(`
-      SELECT category, COALESCE(SUM(amount), 0) as total
-      FROM expenses
-      WHERE user_id = ? AND date >= ? AND date <= ?
-      GROUP BY category
-      ORDER BY total DESC
-    `);
-    const expenseByCategory = expenseCatStmt.all(userId, startDate, endDate) as { category: string; total: number }[];
+    const expenseByCategory = queryAll<{ category: string; total: number }>(
+      `SELECT category, COALESCE(SUM(amount), 0) as total FROM expenses WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY category ORDER BY total DESC`,
+      [userId, startDate, endDate]
+    );
 
     return {
-      user_id: userId,
-      year,
+      user_id: userId, year,
       total_income: totals.total_income,
       total_expense: totals.total_expense,
       balance: totals.total_income - totals.total_expense,

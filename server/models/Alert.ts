@@ -1,4 +1,4 @@
-import { getDb } from './User.js';
+import { exec, queryAll, queryOne, run } from './db.js';
 
 export interface Alert {
   id: number;
@@ -12,76 +12,61 @@ export interface Alert {
 
 export const AlertModel = {
   create: (userId: number, fundId: number, type: 'low_balance' | 'budget_exceeded', threshold: number): Alert => {
-    const database = getDb();
-    const stmt = database.prepare(`
-      INSERT INTO alerts (user_id, fund_id, type, threshold, is_active) VALUES (?, ?, ?, ?, 1)
-    `);
-    const result = stmt.run(userId, fundId, type, threshold);
-    return AlertModel.findById(Number(result.lastInsertRowid))!;
+    const result = run(
+      `INSERT INTO alerts (user_id, fund_id, type, threshold, is_active) VALUES (?, ?, ?, ?, 1)`,
+      [userId, fundId, type, threshold]
+    );
+    return AlertModel.findById(result.lastInsertRowid)!;
   },
 
   findById: (id: number): Alert | undefined => {
-    const database = getDb();
-    const stmt = database.prepare('SELECT * FROM alerts WHERE id = ?');
-    return stmt.get(id) as Alert | undefined;
+    const row = queryOne<any>('SELECT * FROM alerts WHERE id = ?', [id]);
+    if (!row) return undefined;
+    return { ...row, is_active: row.is_active === 1 };
   },
 
   findByUserId: (userId: number): Alert[] => {
-    const database = getDb();
-    const stmt = database.prepare('SELECT * FROM alerts WHERE user_id = ? ORDER BY created_at DESC');
-    return stmt.all(userId) as Alert[];
+    const rows = queryAll<any>('SELECT * FROM alerts WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+    return rows.map(row => ({ ...row, is_active: row.is_active === 1 }));
   },
 
   findByFundId: (fundId: number): Alert[] => {
-    const database = getDb();
-    const stmt = database.prepare('SELECT * FROM alerts WHERE fund_id = ?');
-    return stmt.all(fundId) as Alert[];
+    const rows = queryAll<any>('SELECT * FROM alerts WHERE fund_id = ?', [fundId]);
+    return rows.map(row => ({ ...row, is_active: row.is_active === 1 }));
   },
 
   findActiveByType: (userId: number, type: 'low_balance' | 'budget_exceeded'): Alert[] => {
-    const database = getDb();
-    const stmt = database.prepare('SELECT * FROM alerts WHERE user_id = ? AND type = ? AND is_active = 1');
-    return stmt.all(userId, type) as Alert[];
+    const rows = queryAll<any>('SELECT * FROM alerts WHERE user_id = ? AND type = ? AND is_active = 1', [userId, type]);
+    return rows.map(row => ({ ...row, is_active: true }));
   },
 
   updateThreshold: (id: number, userId: number, threshold: number): boolean => {
-    const database = getDb();
-    const stmt = database.prepare('UPDATE alerts SET threshold = ? WHERE id = ? AND user_id = ?');
-    const result = stmt.run(threshold, id, userId);
+    const result = run('UPDATE alerts SET threshold = ? WHERE id = ? AND user_id = ?', [threshold, id, userId]);
     return result.changes > 0;
   },
 
   toggleActive: (id: number, userId: number, isActive: boolean): boolean => {
-    const database = getDb();
-    const stmt = database.prepare('UPDATE alerts SET is_active = ? WHERE id = ? AND user_id = ?');
-    const result = stmt.run(isActive ? 1 : 0, id, userId);
+    const result = run('UPDATE alerts SET is_active = ? WHERE id = ? AND user_id = ?', [isActive ? 1 : 0, id, userId]);
     return result.changes > 0;
   },
 
   delete: (id: number, userId: number): boolean => {
-    const database = getDb();
-    const stmt = database.prepare('DELETE FROM alerts WHERE id = ? AND user_id = ?');
-    const result = stmt.run(id, userId);
+    const result = run('DELETE FROM alerts WHERE id = ? AND user_id = ?', [id, userId]);
     return result.changes > 0;
   },
 
-  // Check if any fund has low balance
   checkLowBalanceAlerts: (userId: number): Alert[] => {
-    const database = getDb();
-    const stmt = database.prepare(`
+    return queryAll<any>(`
       SELECT a.* FROM alerts a
       JOIN funds f ON a.fund_id = f.id
       WHERE a.user_id = ? AND a.type = 'low_balance' AND a.is_active = 1
       AND f.balance < a.threshold
-    `);
-    return stmt.all(userId) as Alert[];
+    `, [userId]);
   }
 };
 
 export function initializeAlertTable(): void {
-  const database = getDb();
-
-  database.exec(`
+  exec(`
     CREATE TABLE IF NOT EXISTS alerts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
