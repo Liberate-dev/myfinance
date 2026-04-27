@@ -1,0 +1,235 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-terminal-black text-text-primary font-body;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    @apply bg-finance-green text-terminal-black;
+  }
+
+  /* Custom scrollbar - terminal style */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-terminal-dark;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-terminal-border;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-muted;
+  }
+
+  /* Remove all border-radius for brutalist look */
+  *, *::before, *::after {
+    border-radius: 0 !important;
+  }
+}
+
+@layer components {
+  /* Terminal Card - sharp edges, border, no shadows by default */
+  .card {
+    @apply bg-terminal-dark border border-terminal-border p-6;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200;
+  }
+
+  .card-hover:hover {
+    @apply border-finance-green bg-terminal;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+  }
+
+  /* Stat Card - numbers are king */
+  .stat-card {
+    @apply bg-terminal-dark border border-terminal-border p-6;
+  }
+
+  .stat-card:hover {
+    @apply border-finance-green;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+  }
+
+  /* Primary Button - green accent */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-finance-green text-terminal-black font-mono font-semibold
+           border border-finance-green
+           transition-all duration-200
+           hover:bg-finance-green-dim hover:shadow-glow-green
+           focus:outline-none focus:ring-2 focus:ring-finance-green focus:ring-offset-2 focus:ring-offset-terminal-black
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Secondary Button - outline style */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-transparent text-text-primary font-mono font-medium
+           border border-terminal-border
+           transition-all duration-200
+           hover:border-finance-green hover:text-finance-green
+           focus:outline-none focus:ring-2 focus:ring-finance-green focus:ring-offset-2 focus:ring-offset-terminal-black;
+  }
+
+  /* Ghost Button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           text-text-secondary font-mono
+           transition-all duration-200
+           hover:text-finance-green hover:bg-terminal-light;
+  }
+
+  /* Danger Button */
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-finance-red text-white font-mono font-semibold
+           border border-finance-red
+           transition-all duration-200
+           hover:bg-finance-red-dim hover:shadow-glow-red;
+  }
+
+  /* Input - terminal style */
+  .input {
+    @apply w-full px-4 py-2.5
+           bg-terminal-light text-text-primary font-mono
+           border border-terminal-border
+           transition-all duration-200
+           placeholder:text-text-muted
+           focus:outline-none focus:ring-2 focus:ring-finance-green/30 focus:border-finance-green
+           disabled:bg-terminal-dark disabled:cursor-not-allowed;
+  }
+
+  /* Money Display - monospace is mandatory */
+  .money {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+
+  .money-positive {
+    @apply text-finance-green;
+  }
+
+  .money-negative {
+    @apply text-finance-red;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1
+           text-xs font-mono font-medium;
+  }
+
+  .badge-green {
+    @apply bg-finance-green/20 text-finance-green border border-finance-green/30;
+  }
+
+  .badge-red {
+    @apply bg-finance-red/20 text-finance-red border border-finance-red/30;
+  }
+
+  .badge-yellow {
+    @apply bg-finance-yellow/20 text-finance-yellow border border-finance-yellow/30;
+  }
+
+  .badge-blue {
+    @apply bg-finance-blue/20 text-finance-blue border border-finance-blue/30;
+  }
+
+  /* Nav link - terminal style */
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-3
+           text-text-secondary font-mono text-sm
+           border-l-2 border-transparent
+           transition-all duration-150;
+  }
+
+  .nav-link:hover {
+    @apply bg-terminal-light text-text-primary;
+  }
+
+  .nav-link.active {
+    @apply bg-terminal-light text-finance-green border-l-finance-green;
+  }
+
+  /* Page container */
+  .page-container {
+    @apply min-h-screen bg-terminal-black;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply animate-pulse bg-terminal-light;
+  }
+
+  /* Section header - uppercase, tracking-wide */
+  .section-header {
+    @apply text-xs font-mono uppercase tracking-widest text-text-muted mb-4;
+  }
+
+  /* Grid lines - terminal aesthetic */
+  .grid-lines {
+    background-image:
+      linear-gradient(rgba(51, 51, 51, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(51, 51, 51, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
+
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-finance-green to-finance-blue;
+  }
+
+  /* Glow effects */
+  .glow-green {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Terminal scanline effect */
+  .scanlines::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.1) 2px,
+      rgba(0, 0, 0, 0.1) 4px
+    );
+    pointer-events: none;
+  }
+}
