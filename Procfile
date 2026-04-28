@@ -1,5 +1,5 @@
-# Start server directly with tsx
-web: npx tsx server/index.ts
+# Build frontend, then run server
+web: npm run build && npx tsx server/index.ts
 
 # Development
-dev: tsx watch server/index.ts
+dev: npx tsx server/index.ts

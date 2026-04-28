@@ -79,6 +79,15 @@ async function initApp() {
   app.use('/api/alerts', alertRoutes);
   app.use('/api/balance-history', balanceHistoryRoutes);
 
+  // Serve static files from dist (production build)
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+
+  // SPA fallback - serve index.html for non-API routes
+  app.get(/^(?!\/api).*/, (_req: Request, res: Response) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+
   // Health check endpoint
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
