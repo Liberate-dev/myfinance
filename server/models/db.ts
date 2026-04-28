@@ -87,5 +87,10 @@ export function run(sql: string, params: any[] = []): { lastInsertRowid: number;
 export function exec(sql: string): void {
   if (!_db) throw new Error('Database not initialized');
   _db.run(sql);
-  saveDb();
+}
+
+// Run raw SQL without saving (for initialization)
+export function execNoSave(sql: string): void {
+  if (!_db) throw new Error('Database not initialized');
+  _db.run(sql);
 }

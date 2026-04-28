@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export type BalanceChangeType = 'income' | 'expense' | 'transfer_in' | 'transfer_out' | 'initial' | 'adjustment';
 
@@ -54,7 +54,7 @@ export const BalanceHistoryModel = {
 };
 
 export function initializeBalanceHistoryTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS balance_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -71,6 +71,6 @@ export function initializeBalanceHistoryTable(): void {
       FOREIGN KEY (fund_id) REFERENCES funds(id) ON DELETE CASCADE
     )
   `);
-  exec(`CREATE INDEX IF NOT EXISTS idx_balance_history_fund ON balance_history(fund_id)`);
-  exec(`CREATE INDEX IF NOT EXISTS idx_balance_history_user ON balance_history(user_id)`);
+  execNoSave(`CREATE INDEX IF NOT EXISTS idx_balance_history_fund ON balance_history(fund_id)`);
+  execNoSave(`CREATE INDEX IF NOT EXISTS idx_balance_history_user ON balance_history(user_id)`);
 }

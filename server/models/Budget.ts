@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export interface Budget {
   id: number;
@@ -73,7 +73,7 @@ export const BudgetModel = {
 };
 
 export function initializeBudgetTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS budgets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

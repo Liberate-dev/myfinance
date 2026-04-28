@@ -1,4 +1,4 @@
-import { exec, queryOne, run } from './db.js';
+import { execNoSave, queryOne, run } from './db.js';
 
 export interface User {
   id: number;
@@ -32,7 +32,7 @@ export const UserModel = {
 };
 
 export function initializeUserTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,

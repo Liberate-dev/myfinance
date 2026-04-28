@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export interface Transfer {
   id: number;
@@ -38,7 +38,7 @@ export const TransferModel = {
 };
 
 export function initializeTransferTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS transfers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

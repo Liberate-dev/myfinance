@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export interface Fund {
   id: number;
@@ -56,7 +56,7 @@ export const FundModel = {
 };
 
 export function initializeFundTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS funds (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export type RecurringFrequency = 'daily' | 'weekly' | 'monthly';
 
@@ -96,7 +96,7 @@ export const RecurringTransactionModel = {
 };
 
 export function initializeRecurringTransactionTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS recurring_transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

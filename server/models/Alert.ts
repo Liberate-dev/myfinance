@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export interface Alert {
   id: number;
@@ -66,7 +66,7 @@ export const AlertModel = {
 };
 
 export function initializeAlertTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS alerts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

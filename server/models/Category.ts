@@ -1,4 +1,4 @@
-import { exec, queryAll, queryOne, run } from './db.js';
+import { execNoSave, queryAll, queryOne, run } from './db.js';
 
 export interface Category {
   id: number;
@@ -7,10 +7,6 @@ export interface Category {
   icon: string;
   is_default: boolean;
   user_id?: number;
-}
-
-export interface UserCategory extends Category {
-  user_id: number;
 }
 
 export const PREDEFINED_CATEGORIES: Omit<Category, 'id'>[] = [
@@ -106,7 +102,7 @@ export const CategoryModel = {
 };
 
 export function initializeCategoryTable(): void {
-  exec(`
+  execNoSave(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

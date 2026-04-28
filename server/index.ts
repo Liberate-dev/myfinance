@@ -33,9 +33,14 @@ import { initializeTransferTable } from './models/Transfer.js';
 import { initializeRecurringTransactionTable } from './models/RecurringTransaction.js';
 import { initializeBalanceHistoryTable } from './models/BalanceHistory.js';
 import { initializeAlertTable } from './models/Alert.js';
+import { getDb } from './models/db.js';
 
 // Initialize database and tables
 async function initApp() {
+  // Initialize database first
+  await getDb();
+
+  // Then initialize all tables
   initializeUserTable();
   initializeIncomeTable();
   initializeExpenseTable();
