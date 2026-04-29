@@ -4,7 +4,16 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Get data directory - use /app/data on Railway, local dev falls back to project dir
+const getDataPath = (): string => {
+  const railwayPath = '/app/data';
+  if (fs.existsSync(railwayPath) || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    return path.join(railwayPath, 'data.db');
+  }
+  return path.join(__dirname, '..', 'data.db');
+};
 
 // Database singleton - initialized lazily
 let _db: SqlJsDatabase | null = null;
@@ -12,8 +21,14 @@ let _dbPath: string = '';
 
 export async function getDb(): Promise<SqlJsDatabase> {
   if (!_db) {
-    _dbPath = path.join(__dirname, '..', 'data.db');
+    _dbPath = getDataPath();
     console.log('[DB] Opening database at:', _dbPath);
+
+    // Ensure data directory exists
+    const dataDir = path.dirname(_dbPath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
 
     const SQL = await initSqlJs();
 
