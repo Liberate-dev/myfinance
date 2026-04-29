@@ -2,6 +2,7 @@ import { Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/auth.js';
 import { SummaryModel } from '../models/Summary.js';
+import { FundModel } from '../models/Fund.js';
 
 export interface Suggestion {
   id: string;
@@ -11,14 +12,14 @@ export interface Suggestion {
   action?: string;
 }
 
-const generateSuggestions = (summary: ReturnType<typeof SummaryModel.getMonthlySummary>): Suggestion[] => {
+const generateSuggestions = (summary: ReturnType<typeof SummaryModel.getMonthlySummary>, fundBalance: number): Suggestion[] => {
   const suggestions: Suggestion[] = [];
 
   if (!summary) {
     return suggestions;
   }
 
-  const { total_income, total_expense, balance } = summary;
+  const { total_income, total_expense } = summary;
 
   // Rule 1: If expense > income * 0.8 → "Pengeluaran 80%+ dari income. Kurangi non-esensial."
   if (total_income > 0 && total_expense > total_income * 0.8) {
@@ -31,19 +32,31 @@ const generateSuggestions = (summary: ReturnType<typeof SummaryModel.getMonthlyS
     });
   }
 
-  // Rule 5: If balance < 10% of income → "Tabungan <10%. Sisihkan minimal 10% income."
-  if (total_income > 0 && balance >= 0 && balance < total_income * 0.1) {
+  // Rule 5: If no income and just expense directly to fund → "Tidak ada income bulan ini."
+  // This is info if fund balance is still positive (user spending from savings)
+  if (total_income === 0 && total_expense > 0 && fundBalance >= 0) {
     suggestions.push({
-      id: 'savings-low',
+      id: 'no-income',
       type: 'info',
-      message: `Tabungan ${Math.round((balance / total_income) * 100)}%. Sisihkan minimal 10% income.`,
+      message: 'Tidak ada income bulan ini. Sedang gunakan dana yang ada.',
       priority: 3,
-      action: 'Start Saving'
+      action: 'Add Income'
     });
   }
 
-  // Rule 4: If no savings (balance < 0) → "Balance negatif. Prioritas bayar hutang."
-  if (balance < 0) {
+  // Rule 2: If no income at all and spending → "Tidak ada income. Tambah income atau kurangi expense."
+  if (total_income === 0 && total_expense > 0) {
+    suggestions.push({
+      id: 'no-income-warning',
+      type: 'warning',
+      message: 'Tidak ada income bulan ini. Prioritas tambah income atau kurangi spending.',
+      priority: 2,
+      action: 'Add Income'
+    });
+  }
+
+  // Rule 4: If fund balance is negative → "Balance negatif. Prioritas bayar hutang."
+  if (fundBalance < 0) {
     suggestions.push({
       id: 'negative-balance',
       type: 'warning',
@@ -69,7 +82,7 @@ const generateSuggestions = (summary: ReturnType<typeof SummaryModel.getMonthlyS
       });
     }
 
-    // Rule 2: If food expense > 30% of total expense → "Pengeluaran makan 30%+. Kurangi makan luar."
+    // Rule: If food expense > 30% of total expense → "Pengeluaran makan 30%+. Kurangi makan luar."
     const foodCategory = categories.find(c => c.category.toLowerCase() === 'food');
 
     if (foodCategory && foodCategory.percentage > 30) {
@@ -96,8 +109,9 @@ const generateSuggestions = (summary: ReturnType<typeof SummaryModel.getMonthlyS
     }
   }
 
-  // Success message if no warnings
-  if (suggestions.length === 0 && balance >= total_income * 0.1 && total_expense <= total_income * 0.8) {
+  // Success message if no warnings and healthy fund balance
+  const incomeExpenseBalance = total_income - total_expense;
+  if (suggestions.length === 0 && fundBalance >= total_income * 0.1 && total_expense <= total_income * 0.8) {
     suggestions.push({
       id: 'good-status',
       type: 'success',
@@ -119,7 +133,8 @@ export const getSuggestions = asyncHandler(async (req: AuthRequest, res: Respons
   const year = parseInt(req.query.year as string) || now.getFullYear();
 
   const summary = SummaryModel.getMonthlySummary(userId, month, year);
-  const suggestions = generateSuggestions(summary);
+  const fundBalance = FundModel.getTotalBalance(userId);
+  const suggestions = generateSuggestions(summary, fundBalance);
 
   res.json(suggestions);
 });

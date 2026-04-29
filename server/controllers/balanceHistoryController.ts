@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import { Response } from 'express';
 import { BalanceHistoryModel } from '../models/BalanceHistory.js';
+import { FundModel } from '../models/Fund.js';
 import { AuthRequest } from '../middleware/auth.js';
 
 export const getBalanceHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -22,6 +23,13 @@ export const getFundBalanceHistory = asyncHandler(async (req: AuthRequest, res: 
 
   if (isNaN(fundId)) {
     res.status(400).json({ error: 'Invalid fund ID' });
+    return;
+  }
+
+  // Verify fund belongs to user
+  const fund = FundModel.findById(fundId);
+  if (!fund || fund.user_id !== userId) {
+    res.status(404).json({ error: 'Fund not found' });
     return;
   }
 

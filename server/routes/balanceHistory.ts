@@ -7,6 +7,6 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', getBalanceHistory);
-router.get('/fund/:fundId', getFundBalanceHistory);
+router.get('/:fundId', getFundBalanceHistory);
 
 export default router;
